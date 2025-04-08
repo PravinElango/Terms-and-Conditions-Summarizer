@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.py[cod]
+*.env
+.env
+
+# FastAPI logs or temporary files
+*.log
+
+# React / Node.js
+node_modules/
+build/
+dist/
+.env.local
+
+# System files
+.DS_Store
+Thumbs.db
