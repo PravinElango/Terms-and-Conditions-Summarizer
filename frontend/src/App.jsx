@@ -43,7 +43,8 @@ const App = () => {
     setSummary(null);
 
     try {
-      const response = await fetch('http://localhost:8000/summarize/', {
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+      const response = await fetch(`${backendUrl}/summarize/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: inputValue }),
@@ -150,8 +151,8 @@ const App = () => {
               onClick={generateSummary}
               disabled={!inputValue || isLoading}
               className={`mt-6 w-full py-4 text-lg font-bold rounded-xl flex items-center justify-center gap-3 transition-all transform active:scale-[0.98] ${!inputValue || isLoading
-                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                  : 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg hover:shadow-blue-500/30'
+                ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                : 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg hover:shadow-blue-500/30'
                 }`}
             >
               {isLoading ? (
