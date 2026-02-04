@@ -14,7 +14,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-class InputData(BaseModel):
+class InputData(BaseModel):    
     text: str
 
 @app.post("/summarize/")

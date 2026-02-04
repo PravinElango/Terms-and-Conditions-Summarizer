@@ -1,11 +1,40 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { Search, Link, FileText, Sparkles, Clock, Menu } from 'lucide-react';
+import SummaryDisplay from './components/SummaryDisplay';
+import HistorySidebar from './components/HistorySidebar';
 
 const App = () => {
   const [inputType, setInputType] = useState('url');
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [summary, setSummary] = useState(null);
-  const [activeTab, setActiveTab] = useState('glance');
+  const [history, setHistory] = useState([]);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+
+  // Load history on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('summaryHistory');
+    if (saved) {
+      setHistory(JSON.parse(saved));
+    }
+  }, []);
+
+  const saveToHistory = (newSummary) => {
+    const item = {
+      ...newSummary,
+      id: Date.now(),
+      date: new Date().toLocaleDateString(),
+    };
+    const updated = [item, ...history].slice(0, 50); // Keep last 50
+    setHistory(updated);
+    localStorage.setItem('summaryHistory', JSON.stringify(updated));
+  };
+
+  const clearHistory = () => {
+    setHistory([]);
+    localStorage.removeItem('summaryHistory');
+  };
 
   const generateSummary = async () => {
     if (!inputValue) return;
@@ -26,6 +55,7 @@ const App = () => {
 
       const data = await response.json();
       setSummary(data);
+      saveToHistory(data);
     } catch (error) {
       console.error('Error:', error);
       alert('Failed to summarize the text. Please try again.');
@@ -34,136 +64,116 @@ const App = () => {
     }
   };
 
-  const getRiskColor = (risk) => {
-    switch (risk) {
-      case 'high': return 'bg-red-100 text-red-800 border-red-200';
-      case 'medium': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'low': return 'bg-green-100 text-green-800 border-green-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
-  };
-
   return (
-    <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-lg">
-      <h1 className="text-2xl font-bold mb-6 text-center">Terms & Conditions Summarizer</h1>
-
-      {/* Input */}
-      <div className="mb-8 bg-gray-50 p-6 rounded-lg border border-gray-200">
-        <div className="flex mb-4">
-          <button
-            onClick={() => setInputType('url')}
-            className={`px-4 py-2 rounded-l-md ${inputType === 'url' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
-          >
-            URL
-          </button>
-          <button
-            onClick={() => setInputType('text')}
-            className={`px-4 py-2 rounded-r-md ${inputType === 'text' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
-          >
-            Paste Text
-          </button>
-        </div>
-
-        {inputType === 'url' ? (
-          <input
-            type="url"
-            className="w-full p-3 border border-gray-300 rounded-md mb-4"
-            placeholder="Enter T&C page URL"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-          />
-        ) : (
-          <textarea
-            className="w-full p-3 border border-gray-300 rounded-md mb-4 h-32"
-            placeholder="Paste full Terms and Conditions text here..."
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-          />
-        )}
-
-        <button
-          onClick={generateSummary}
-          disabled={!inputValue || isLoading}
-          className={`px-6 py-3 rounded-md ${!inputValue || isLoading ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'} text-white font-medium`}
-        >
-          {isLoading ? 'Analyzing...' : 'Summarize Terms'}
-        </button>
+    <div className="min-h-screen relative overflow-x-hidden">
+      {/* Background Blobs for specific "wow" factor */}
+      <div className="fixed top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
+        <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-purple-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
+        <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-blue-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
+        <div className="absolute bottom-[-10%] left-[20%] w-[500px] h-[500px] bg-pink-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-4000"></div>
       </div>
 
-      {/* Loading Indicator */}
-      {isLoading && (
-        <div className="text-center p-8">
-          <div className="inline-block h-8 w-8 border-4 border-t-blue-600 rounded-full animate-spin"></div>
-          <p className="mt-2 text-gray-600">Analyzing terms & conditions...</p>
-        </div>
-      )}
+      <HistorySidebar
+        isOpen={isHistoryOpen}
+        onClose={() => setIsHistoryOpen(false)}
+        history={history}
+        onSelect={(item) => {
+          setSummary(item);
+          setIsHistoryOpen(false);
+        }}
+        onClear={clearHistory}
+      />
 
-      {/* Summary Output */}
-      {summary && (
-        <div className="bg-white rounded-lg border border-gray-200 summary-container" id="summary-content">
-          <div className="border-b border-gray-200 p-4">
-            <h2 className="text-xl font-semibold">{summary.title}</h2>
-            <p className="text-sm text-gray-600">Last updated: {summary.lastUpdated}</p>
+      <div className="max-w-5xl mx-auto p-4 md:p-8">
+        {/* Header */}
+        <header className="flex justify-between items-center mb-12">
+          <button
+            onClick={() => setIsHistoryOpen(true)}
+            className="p-3 bg-white/50 backdrop-blur-md rounded-xl hover:bg-white/80 transition-all shadow-sm border border-white/40 text-gray-600 hover:text-blue-600 group"
+          >
+            <Clock size={24} className="group-hover:rotate-12 transition-transform" />
+          </button>
+          <div className="text-center">
+            <h1 className="text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 mb-2 tracking-tight">
+              Terms & Conditions
+            </h1>
+            <p className="text-gray-500 font-medium">Simplify the fine print in seconds.</p>
           </div>
+          <div className="w-12"></div> {/* Spacer for balance */}
+        </header>
 
-          <div className="border-b border-gray-200">
-            <div className="flex">
+        {/* Hero Input Section */}
+        <motion.div
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          className="glass-card rounded-3xl p-2 mb-10 mx-auto max-w-3xl"
+        >
+          <div className="bg-white/50 rounded-2xl p-6 md:p-8">
+            <div className="flex bg-gray-100/80 p-1.5 rounded-xl mb-6 w-fit mx-auto">
               <button
-                onClick={() => setActiveTab('glance')}
-                className={`px-4 py-2 font-medium ${activeTab === 'glance' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600'}`}
+                onClick={() => setInputType('url')}
+                className={`px-6 py-2.5 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 ${inputType === 'url' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
               >
-                At a Glance
+                <Link size={16} /> URL Link
               </button>
               <button
-                onClick={() => setActiveTab('key')}
-                className={`px-4 py-2 font-medium ${activeTab === 'key' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600'}`}
+                onClick={() => setInputType('text')}
+                className={`px-6 py-2.5 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 ${inputType === 'text' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
               >
-                Key Points
-              </button>
-              <button
-                onClick={() => setActiveTab('detailed')}
-                className={`px-4 py-2 font-medium ${activeTab === 'detailed' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600'}`}
-              >
-                Detailed Breakdown
+                <FileText size={16} /> Paste Text
               </button>
             </div>
-          </div>
 
-          <div className="p-6">
-            {activeTab === 'glance' && (
-              <p className="text-gray-800">{summary.glance}</p>
-            )}
-            {activeTab === 'key' && (
-              <ul className="space-y-3">
-                {summary.keyPoints.map((item, idx) => (
-                  <li key={idx} className={`p-3 rounded-md border ${getRiskColor(item.risk)}`}>
-                    {item.point}
-                  </li>
-                ))}
-              </ul>
-            )}
-            {activeTab === 'detailed' && (
-              <div className="space-y-6">
-                {summary.detailed.map((section, idx) => (
-                  <div key={idx} className="border-b border-gray-200 pb-4">
-                    <h3 className="font-medium text-lg mb-2 flex items-center">
-                      {section.section}
-                      <span className={`ml-2 text-xs px-2 py-1 rounded-full ${getRiskColor(section.risk)}`}>
-                        {section.risk} risk
-                      </span>
-                    </h3>
-                    <p className="text-gray-700">{section.content}</p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+            <div className="relative group">
+              {inputType === 'url' ? (
+                <div className="relative">
+                  <Link className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors" size={20} />
+                  <input
+                    type="url"
+                    className="w-full pl-12 pr-4 py-4 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all outline-none font-medium text-gray-700"
+                    placeholder="https://example.com/terms"
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                  />
+                </div>
+              ) : (
+                <textarea
+                  className="w-full p-4 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all outline-none font-medium text-gray-700 min-h-[150px] resize-y"
+                  placeholder="Paste the full legal text here..."
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                />
+              )}
+            </div>
 
-          <div className="bg-gray-50 p-4 text-sm text-gray-600 rounded-b-lg">
-            <p>This summary is generated automatically and should not be considered legal advice. Always review the full terms when making important decisions.</p>
+            <button
+              onClick={generateSummary}
+              disabled={!inputValue || isLoading}
+              className={`mt-6 w-full py-4 text-lg font-bold rounded-xl flex items-center justify-center gap-3 transition-all transform active:scale-[0.98] ${!inputValue || isLoading
+                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  : 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg hover:shadow-blue-500/30'
+                }`}
+            >
+              {isLoading ? (
+                <>
+                  <div className="h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Analyzing Legal Text...
+                </>
+              ) : (
+                <>
+                  <Sparkles size={20} />
+                  Summarize Now
+                </>
+              )}
+            </button>
           </div>
-        </div>
-      )}
+        </motion.div>
+
+        {/* Summary Output */}
+        {summary && (
+          <SummaryDisplay summary={summary} />
+        )}
+      </div>
     </div>
   );
 };
