@@ -2,7 +2,7 @@
 
 **Terms & Conditions Summarizer** is an AI-powered web application designed to help users quickly understand complex legal agreements. By leveraging **LLMs (Groq/Llama)**, it transforms lengthy T&Cs into concise summaries, key risk points, and detailed breakdowns.
 
-![Terms & Conditions Summarizer](https://placehold.co/1200x600?text=Terms+%26+Conditions+Summarizer)
+![Terms & Conditions Summarizer](assets/screenshot.png)
 
 ## 🚀 Features
 
